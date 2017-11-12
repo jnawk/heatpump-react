@@ -35,10 +35,18 @@
 }
 
 .radial-progress-bar.hot {
-    stroke: #e53935;
+    stroke: #ff7935;
 }
 
 .radial-progress-bar.cold {
+    stroke: #00bbdd;
+}
+
+.radial-progress-bar.too_hot {
+    stroke: #e53935;
+}
+
+.radial-progress-bar.too_cold {
     stroke: #0000cc;
 }
 

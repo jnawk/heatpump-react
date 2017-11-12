@@ -35,25 +35,52 @@ class Gauge extends React.Component {
 
         const needleTransform = 'rotate(' + oneDegreeInDegrees * this.props.temperature + ' 60 60)';
 
-        const coldPattern = {
+        const tooColdPattern = {
             start: 0,
+            stop: oneDegreeInPixels * (this.props.too_cold + 20)
+        };
+
+        const coldPattern = {
+            start: tooColdPattern.stop,
             stop: oneDegreeInPixels * (this.props.cold + 20)
         };
+
         const hotPattern = {
             start: oneDegreeInPixels * (this.props.hot + 20),
+            stop: oneDegreeInPixels * (this.props.too_hot + 20)
+        };
+
+        const tooHotPattern = {
+            start: hotPattern.stop,
             stop: 60 * oneDegreeInPixels
         };
-        const coldDashArray = (
-            coldPattern.stop + 'px ' + 
-            (hotPattern.stop - coldPattern.stop + 20 * oneDegreeInPixels) + 'px ' +
-            (20 * oneDegreeInPixels) + 'px ' +
-            '0px'
+
+        const tooColdDashArray = (
+            /* draw */ tooColdPattern.stop + 'px ' + 
+            /* skip */ (tooHotPattern.stop - tooColdPattern.stop + 20 * oneDegreeInPixels) + 'px ' +
+            /* draw */ (20 * oneDegreeInPixels) + 'px ' +
+            /* skip */ '0px'
         );
+
+        const coldDashArray = (
+            /* draw */ '0px ' +
+            /* skip */ tooColdPattern.stop + 'px ' + 
+            /* draw */ (coldPattern.stop - coldPattern.start) + 'px ' +
+            /* skip */ (tooHotPattern.stop - coldPattern.stop + 40 * oneDegreeInPixels) + 'px '
+        );
+
         const hotDashArray = (
-            '0px ' + 
-            hotPattern.start + 'px ' + 
-            (hotPattern.stop - hotPattern.start) + 'px ' +
-            (120 * oneDegreeInPixels - hotPattern.stop) + 'px'
+            /* draw */ '0px ' + 
+            /* skip */ hotPattern.start + 'px ' + 
+            /* draw */ (tooHotPattern.start - hotPattern.start) + 'px ' +
+            /* skip */ (tooHotPattern.stop - hotPattern.stop + 40 * oneDegreeInPixels) + 'px'
+        );
+
+        const tooHotDashArray = (
+            /* draw */ '0px ' + 
+            /* skip */ tooHotPattern.start + 'px ' + 
+            /* draw */ (tooHotPattern.stop - tooHotPattern.start) + 'px ' +
+            /* skip */ (40 * oneDegreeInPixels) + 'px'
         );
 
         return (
@@ -78,13 +105,25 @@ class Gauge extends React.Component {
                 <circle className='radial-track' 
                     cx='60' cy='60' r='54' fill='none'
                     strokeDasharray='169.65px 84.82px 84.82px 0px'></circle>
+
+                <circle className='radial-progress-bar too_cold' 
+                    cx='60' cy='60' r='54' fill='none'
+                    strokeDasharray={tooColdDashArray}
+                    transform='rotate(-90 60,60)'></circle>
+
                 <circle className='radial-progress-bar cold' 
                     cx='60' cy='60' r='54' fill='none'
                     strokeDasharray={coldDashArray}
                     transform='rotate(-90 60,60)'></circle>
+
                 <circle className='radial-progress-bar hot' 
                     cx='60' cy='60' r='54' fill='none' 
                     strokeDasharray={hotDashArray}
+                    transform='rotate(-90 60,60)'></circle>
+
+                <circle className='radial-progress-bar too_hot' 
+                    cx='60' cy='60' r='54' fill='none' 
+                    strokeDasharray={tooHotDashArray}
                     transform='rotate(-90 60,60)'></circle>
 
                 <g id='needle' className='needle'>

@@ -71,8 +71,10 @@ class Heatpump extends React.Component {
                             this.setState({
                                 heatpump: payload,
                                 temperature: payload.state.reported.temperature,
+                                too_hot: payload.state.reported.cooling_start,
                                 hot: payload.state.reported.cooling_stop,
-                                cold: payload.state.reported.heating_stop
+                                cold: payload.state.reported.heating_stop,
+                                too_cold: payload.state.reported.heating_start
                             });
                         } 
                     });
@@ -83,8 +85,16 @@ class Heatpump extends React.Component {
 
     render() {
         var gauge = null;
-        if(typeof this.state.temperature !== 'undefined' && null != this.state.temperature) {
-            gauge = (<Gauge cold={this.state.cold} hot={this.state.hot} temperature={this.state.temperature}/>);
+        if(typeof this.state.temperature !== 'undefined' && 
+            null != this.state.temperature) {
+            gauge = (
+                <Gauge 
+                    cold={this.state.cold} 
+                    too_cold={this.state.too_cold}
+                    hot={this.state.hot}
+                    too_hot={this.state.too_hot}
+                    temperature={this.state.temperature}/>
+            );
         }
 
         var loginText = 'Login';
