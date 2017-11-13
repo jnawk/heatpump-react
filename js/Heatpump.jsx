@@ -15,12 +15,35 @@ class Heatpump extends React.Component {
         this.state = {};
         this.responseGoogle = this.responseGoogle.bind(this);
         this.logout = this.logout.bind(this);
+        this.getShadow = this.getShadow.bind(this);
 
         AWS.config.region = this.props.awsRegion;        
     }
 
     logout() {
         window.console.log('logout');
+    }
+
+    getShadow() {
+        var params = {
+            thingName: this.props.thingName /* required */
+        };
+        this.iotdata.getThingShadow(params, (err, data) => {
+            if (err) {
+                window.console.log(err, err.stack); // an error occurred
+            } else {
+                var payload = JSON.parse(data.payload);
+                this.setState({
+                    heatpump: payload,
+                    temperature: payload.state.reported.temperature,
+                    too_hot: payload.state.reported.cooling_start,
+                    hot: payload.state.reported.cooling_stop,
+                    cold: payload.state.reported.heating_stop,
+                    too_cold: payload.state.reported.heating_start
+                });
+                setTimeout(this.getShadow, 5000);
+            } 
+        });
     }
 
     responseGoogle(authResult) {
@@ -59,25 +82,8 @@ class Heatpump extends React.Component {
                     window.console.log(data);           // successful response
                     this.setState({id: AWS.config.credentials.identityId});
                     AWS.config.credentials = sts.credentialsFrom(data);
-                    const iotdata = new AWS.IotData({endpoint: this.props.endpoint});
-                    var params = {
-                        thingName: this.props.thingName /* required */
-                    };
-                    iotdata.getThingShadow(params, (err, data) => {
-                        if (err) {
-                            window.console.log(err, err.stack); // an error occurred
-                        } else {
-                            var payload = JSON.parse(data.payload);
-                            this.setState({
-                                heatpump: payload,
-                                temperature: payload.state.reported.temperature,
-                                too_hot: payload.state.reported.cooling_start,
-                                hot: payload.state.reported.cooling_stop,
-                                cold: payload.state.reported.heating_stop,
-                                too_cold: payload.state.reported.heating_start
-                            });
-                        } 
-                    });
+                    this.iotdata = new AWS.IotData({endpoint: this.props.endpoint});
+                    this.getShadow();
                 }
             });
         });      
