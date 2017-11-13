@@ -2,8 +2,11 @@ import React from 'react';
 
 import './gauge.css';
 
-const oneDegreeInPixels = (54 * 0.75 * 2 * Math.PI) / 60;
-const oneDegreeInDegrees = 90 / 20;
+const radius = 60;
+const trackRadius = 54
+
+const oneUnitInPixels = (trackRadius * 0.75 * 2 * Math.PI) / 60;
+const oneUnitInDegrees = 90 / 20;
 
 const bigTicks = [0, 45, 90, 135, 180, 270, 315];
 
@@ -16,7 +19,7 @@ class Gauge extends React.Component {
     render() {        
         var ticks = [];
         for(var tick in bigTicks) {
-            transform='rotate(' + bigTicks[tick] + ' 60 60)';
+            transform='rotate(' + bigTicks[tick] + ' ' + radius + ' ' + radius + ')';
             var key = 'bigTick' + bigTicks[tick];
             ticks.push(<use key={key} className='tick quarterTick' href='#tick' transform={transform}></use>);    
         }
@@ -25,7 +28,7 @@ class Gauge extends React.Component {
         while (angle < 360) {
             if(angle < 180 || angle > 270) {
                 if(!bigTicks.includes[angle]) {
-                    var transform = 'rotate(' + angle + ' 60 60)';
+                    var transform = 'rotate(' + angle + ' ' + radius + ' ' + radius + ')';
                     key = 'tick' + angle;
                     ticks.push(<use key={key} className='tick' href='#tick' transform={transform}></use>);
                 }
@@ -33,63 +36,89 @@ class Gauge extends React.Component {
             angle += 4.5;
         }
 
-        const needleTransform = 'rotate(' + oneDegreeInDegrees * this.props.temperature + ' 60 60)';
+        const needleTransform = 'rotate(' + oneUnitInDegrees * this.props.temperature + ' ' + radius + ' ' + radius + ')';
 
         const tooColdPattern = {
             start: 0,
-            stop: oneDegreeInPixels * (this.props.too_cold + 20)
+            stop: oneUnitInPixels * (this.props.too_cold + 20)
         };
 
         const coldPattern = {
             start: tooColdPattern.stop,
-            stop: oneDegreeInPixels * (this.props.cold + 20)
+            stop: oneUnitInPixels * (this.props.cold + 20)
         };
 
         const hotPattern = {
-            start: oneDegreeInPixels * (this.props.hot + 20),
-            stop: oneDegreeInPixels * (this.props.too_hot + 20)
+            start: oneUnitInPixels * (this.props.hot + 20),
+            stop: oneUnitInPixels * (this.props.too_hot + 20)
         };
 
         const tooHotPattern = {
             start: hotPattern.stop,
-            stop: 60 * oneDegreeInPixels
+            stop: 60 * oneUnitInPixels
         };
 
-        const tooColdDashArray = (
-            /* draw */ tooColdPattern.stop + 'px ' + 
-            /* skip */ (tooHotPattern.stop - tooColdPattern.stop + 20 * oneDegreeInPixels) + 'px ' +
-            /* draw */ (20 * oneDegreeInPixels) + 'px ' +
-            /* skip */ '0px'
-        );
+        const trackDefinitions = [
+            {
+                className: 'too_cold',
+                dashArray: (
+                    /* draw */ tooColdPattern.stop + 'px ' + 
+                    /* skip */ (tooHotPattern.stop - tooColdPattern.stop + 20 * oneUnitInPixels) + 'px ' +
+                    /* draw */ (20 * oneUnitInPixels) + 'px ' +
+                    /* skip */ '0px'
+                )
+            },
+            {
+                className: 'cold',
+                dashArray: (
+                    /* draw */ '0px ' +
+                    /* skip */ tooColdPattern.stop + 'px ' + 
+                    /* draw */ (coldPattern.stop - coldPattern.start) + 'px ' +
+                    /* skip */ (tooHotPattern.stop - coldPattern.stop + 40 * oneUnitInPixels) + 'px '
+                )
+            },
+            {
+                className: 'hot',
+                dashArray: (
+                    /* draw */ '0px ' + 
+                    /* skip */ hotPattern.start + 'px ' + 
+                    /* draw */ (tooHotPattern.start - hotPattern.start) + 'px ' +
+                    /* skip */ (tooHotPattern.stop - hotPattern.stop + 40 * oneUnitInPixels) + 'px'
+                )
+            },
+            {
+                className: 'too_hot',
+                dashArray: (
+                    /* draw */ '0px ' + 
+                    /* skip */ tooHotPattern.start + 'px ' + 
+                    /* draw */ (tooHotPattern.stop - tooHotPattern.start) + 'px ' +
+                    /* skip */ (40 * oneUnitInPixels) + 'px'
+                )
+            }
+        ];
+            
+        var tracks = [];
+        for(var track in trackDefinitions) {
+            var classNames = 'radial-progress-bar ' + trackDefinitions[track].className; 
+            key = 'track_' + trackDefinitions[track].className;
+            transform = 'rotate(-90 ' + radius + ' ' + radius + ')';
+            tracks.push(
+                <circle key={key} className={classNames}
+                    cx={radius} cy={radius} r={trackRadius} fill='none' 
+                    strokeDasharray={trackDefinitions[track].dashArray}
+                    transform={transform}></circle>
+            );
+        }
 
-        const coldDashArray = (
-            /* draw */ '0px ' +
-            /* skip */ tooColdPattern.stop + 'px ' + 
-            /* draw */ (coldPattern.stop - coldPattern.start) + 'px ' +
-            /* skip */ (tooHotPattern.stop - coldPattern.stop + 40 * oneDegreeInPixels) + 'px '
-        );
-
-        const hotDashArray = (
-            /* draw */ '0px ' + 
-            /* skip */ hotPattern.start + 'px ' + 
-            /* draw */ (tooHotPattern.start - hotPattern.start) + 'px ' +
-            /* skip */ (tooHotPattern.stop - hotPattern.stop + 40 * oneDegreeInPixels) + 'px'
-        );
-
-        const tooHotDashArray = (
-            /* draw */ '0px ' + 
-            /* skip */ tooHotPattern.start + 'px ' + 
-            /* draw */ (tooHotPattern.stop - tooHotPattern.start) + 'px ' +
-            /* skip */ (40 * oneDegreeInPixels) + 'px'
-        );
+        const rotate = 'rotate(180 ' + radius + ' ' + radius + ')';
 
         return (
             <svg className='radial-progress' 
                 width='320' height='320' viewBox='0 0 120 120'>
                 <defs>
                     <line id='tick' strokeLinecap='round'
-                        x1='104' y1='60' 
-                        x2='110' y2='60'></line>
+                        x1='104' y1={radius} 
+                        x2='110' y2={radius}></line>
                     <radialGradient id='radialCenter' cx='50%' cy='50%' r='50%'>
                         <stop stopColor='#dc3a79' offset='0'></stop>
                         <stop stopColor='#241d3b' offset='1'></stop>
@@ -97,39 +126,19 @@ class Gauge extends React.Component {
                 </defs>
                 <g id='ticks'>{ticks}</g>
                 <g id='tickLabels' className='tick-labels'>
-                    <text x='59' y='100' textAnchor='middle' transform='rotate(180 60 60)'>-20</text>
-                    <text x='24' y='62' textAnchor='middle' transform='rotate(180 60 60)'>0</text>
-                    <text x='59' y='24' textAnchor='middle' transform='rotate(180 60 60)'>20</text>
-                    <text x='96' y='62' textAnchor='middle' transform='rotate(180 60 60)'>40</text>
+                    <text x='59' y='100' textAnchor='middle' transform={rotate}>-20</text>
+                    <text x='24' y='62' textAnchor='middle' transform={rotate}>0</text>
+                    <text x='59' y='24' textAnchor='middle' transform={rotate}>20</text>
+                    <text x='96' y='62' textAnchor='middle' transform={rotate}>40</text>
                 </g>
                 <circle className='radial-track' 
-                    cx='60' cy='60' r='54' fill='none'
+                    cx={radius} cy={radius} r={trackRadius} fill='none'
                     strokeDasharray='169.65px 84.82px 84.82px 0px'></circle>
-
-                <circle className='radial-progress-bar too_cold' 
-                    cx='60' cy='60' r='54' fill='none'
-                    strokeDasharray={tooColdDashArray}
-                    transform='rotate(-90 60,60)'></circle>
-
-                <circle className='radial-progress-bar cold' 
-                    cx='60' cy='60' r='54' fill='none'
-                    strokeDasharray={coldDashArray}
-                    transform='rotate(-90 60,60)'></circle>
-
-                <circle className='radial-progress-bar hot' 
-                    cx='60' cy='60' r='54' fill='none' 
-                    strokeDasharray={hotDashArray}
-                    transform='rotate(-90 60,60)'></circle>
-
-                <circle className='radial-progress-bar too_hot' 
-                    cx='60' cy='60' r='54' fill='none' 
-                    strokeDasharray={tooHotDashArray}
-                    transform='rotate(-90 60,60)'></circle>
-
+                {tracks}
                 <g id='needle' className='needle'>
-                    <polygon className='point' points='60,50 60,70 120,60' 
+                    <polygon className='point' points='60,50 60,70 110,60' 
                         transform={needleTransform}></polygon>
-                    <circle className='center' cx='60' cy='60' r='23'></circle>
+                    <circle className='center' cx={radius} cy={radius} r='23'></circle>
                 </g>
             </svg>
         );    
