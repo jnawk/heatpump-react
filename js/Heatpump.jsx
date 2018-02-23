@@ -3,28 +3,29 @@ import React from 'react';
 import AWS from 'aws-sdk';
 
 import {GoogleLogin, GoogleLogout} from 'react-google-login';
-
+import NumericInput from 'react-numeric-input';
 import Gauge from './Gauge.jsx';
 
-import 'bootstrap/dist/css/bootstrap.css';
-import 'bootstrap/dist/css/bootstrap-theme.css';
+const setpointMappings = {
+    'too_cold': 'heating_start',
+    'cold': 'heating_stop',
+    'hot': 'cooling_stop',
+    'too_hot': 'cooling_start'
+}
 
 class Heatpump extends React.Component {
     constructor(props) {
         super(props);
         this.state = {};
-        this.responseGoogle = this.responseGoogle.bind(this);
-        this.logout = this.logout.bind(this);
-        this.getShadow = this.getShadow.bind(this);
 
         AWS.config.region = this.props.awsRegion;        
     }
 
-    logout() {
+    logout = () => {
         window.console.log('logout');
     }
 
-    getShadow() {
+    getShadow = () => {
         var params = {
             thingName: this.props.thingName /* required */
         };
@@ -46,7 +47,7 @@ class Heatpump extends React.Component {
         });
     }
 
-    responseGoogle(authResult) {
+    responseGoogle = (authResult) => {
         if(authResult.error) {
             window.console.log('nope');
             return;
@@ -89,18 +90,78 @@ class Heatpump extends React.Component {
         });      
     }
 
+    changeTooCold = (value) => { this.changeSetpoints(value, 'too_cold'); }
+    changeCold = (value) => { this.changeSetpoints(value, 'cold'); }
+    changeHot = (value) => { this.changeSetpoints(value, 'hot'); }
+    changeTooHot = (value) => { this.changeSetpoints(value, 'too_hot'); }
+
+    changeSetpoints = (value, control) => {
+        var desired = {}
+        desired[setpointMappings[control]] = value;
+
+        var payload = JSON.stringify({state: {
+            desired: desired
+        }}); 
+        var params = { 
+            thingName: this.props.thingName,
+            payload: payload
+        };
+        window.console.log(params);
+        this.iotdata.updateThingShadow(params, (err, data) => {
+            window.console.log('hello');
+            if(err) {
+                window.console.log(err);
+                return;
+            }
+            this.getShadow();
+        });
+    }
+
     render() {
         var gauge = null;
+        var controls = null;
         if(typeof this.state.temperature !== 'undefined' && 
             null != this.state.temperature) {
             gauge = (
-                <Gauge 
+                <Gauge
                     cold={this.state.cold} 
                     too_cold={this.state.too_cold}
                     hot={this.state.hot}
                     too_hot={this.state.too_hot}
                     temperature={this.state.temperature}/>
             );
+            controls = [
+                (<NumericInput 
+                    key='too_cold' 
+                    min={-20} 
+                    max={40} 
+                    value={this.state.too_cold} 
+                    precision={1} 
+                    onChange={this.changeTooCold}/>),
+                (<br key='br1'/>),
+                (<NumericInput key='cold' 
+                    min={-20} 
+                    max={40} 
+                    value={this.state.cold} 
+                    precision={1} 
+                    onChange={this.changeCold}/>),
+                (<br key='br2'/>),
+                (<NumericInput key='hot' 
+                    min={-20} 
+                    max={40} 
+                    value={this.state.hot} 
+                    precision={1} 
+                    onChange={this.changeHot}/>),
+                (<br key='br3'/>),
+                (<NumericInput key='too_hot' 
+                    min={-20} 
+                    max={40} 
+                    value={this.state.too_hot} 
+                    precision={1} 
+                    onChange={this.changeTooHot}/>),
+                (<br key='br4'/>)
+            ];
+                
         }
 
         var loginText = 'Login';
@@ -115,6 +176,8 @@ class Heatpump extends React.Component {
         return (
             <div>
                 {gauge}
+                <br/>
+                {controls}
                 <br/>
                 <GoogleLogin
                     clientId={this.props.clientId}
